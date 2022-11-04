@@ -1,27 +1,19 @@
 import Mesh from './Mesh';
-import { initShaderProgram } from './shaders';
+import { initShaderProgram, ProgramInfo } from './shaders';
 import { mat4 } from 'gl-matrix';
 
 export default class Scene {
   gl: WebGL2RenderingContext;
   meshes: Array<Mesh> = [];
-  // FIXME: come up with some way to type this thing (probably by improving shader program loading)
-  programInfo: { program: WebGLProgram; attribLocations: { vertexPosition: number; }; uniformLocations: { projectionMatrix: WebGLUniformLocation | null; modelViewMatrix: WebGLUniformLocation | null; }; };
+  program: WebGLProgram;
+  programInfo: ProgramInfo;
 
   constructor(gl: WebGL2RenderingContext, shaderSources: [string, string]) {
     this.gl = gl;
 
-    const shaderProgram = initShaderProgram(gl, shaderSources[0], shaderSources[1]);
-    this.programInfo = {
-      program: shaderProgram,
-      attribLocations: {
-        vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-      },
-      uniformLocations: {
-        projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-        modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-      },
-    };
+    const [shaderProgram, programInfo] = initShaderProgram(gl, shaderSources[0], shaderSources[1]);
+    this.program = shaderProgram;
+    this.programInfo = programInfo;
   }
 
   addMesh(mesh: Mesh) {
@@ -61,29 +53,24 @@ export default class Scene {
     if (buffer === null) throw new Error('Failed to create gl buffer.');
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 
-    // Tell WebGL how to pull out the positions from the position
-    // buffer into the vertexPosition attribute.
-    const numComponents = 3;  // pull out 2 values per iteration
-    const type = gl.FLOAT;    // the data in the buffer is 32bit floats
-    const normalize = false;  // don't normalize
-    const stride = 0;         // how many bytes to get from one set of values to the next
-                                // 0 = use type and numComponents above
-    const offset = 0;         // how many bytes inside the buffer to start from
-    gl.vertexAttribPointer(
-      this.programInfo.attribLocations.vertexPosition,
-      numComponents,
-      type,
-      normalize,
-      stride,
-      offset);
-    gl.enableVertexAttribArray(this.programInfo.attribLocations.vertexPosition);
-
-    // Tell WebGL to use our program when drawing
-    gl.useProgram(this.programInfo.program);
+    // FIXME: Make it so the program is verified ahead of time so we don't need to null check this stuff!
+    const positionAttributeInfo = this.programInfo.attributes.get('aVertexPosition');
+    if (!positionAttributeInfo) throw new Error('The shader does not have a aVertexPosition attribute!');
+    gl.vertexAttribPointer(positionAttributeInfo.location, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionAttributeInfo.location);
 
     // Set the shader uniforms
-    gl.uniformMatrix4fv(this.programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
-    gl.uniformMatrix4fv(this.programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
+    // FIXME: Bad! See above.
+    const projectionMatrixUniformInfo = this.programInfo.uniforms.get('uProjectionMatrix');
+    if (!projectionMatrixUniformInfo) throw new Error('The shader does not have a uProjectionMatrix uniform!');
+    const modelViewMatrixUniformInfo = this.programInfo.uniforms.get('uModelViewMatrix');
+    if (!modelViewMatrixUniformInfo) throw new Error('The shader does not have a uModelViewMatrix uniform!');
+
+    // Tell WebGL to use our program when drawing
+    gl.useProgram(this.program);
+
+    gl.uniformMatrix4fv(projectionMatrixUniformInfo.location, false, projectionMatrix);
+    gl.uniformMatrix4fv(modelViewMatrixUniformInfo.location, false, modelViewMatrix);
 
     for (const mesh of this.meshes) {
       gl.bufferData(gl.ARRAY_BUFFER, mesh.vertexData, gl.STATIC_DRAW, 0);
