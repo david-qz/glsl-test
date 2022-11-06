@@ -28,7 +28,7 @@ export default function WebGLCanvas() {
       const mesh = new Mesh(vertexData, 6);
       scene.setMesh(mesh);
 
-      scene.running = true;
+      scene.setRunning(true);
     })();
   }, []);
 

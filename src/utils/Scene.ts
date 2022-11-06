@@ -7,7 +7,7 @@ export default class Scene {
   private mesh: Mesh | undefined;
   private program: WebGLProgram;
   private programInfo: ProgramInfo;
-  private _running = false;
+  private running = false;
 
   constructor(gl: WebGL2RenderingContext, shaderSources: [string, string]) {
     this.gl = gl;
@@ -21,12 +21,12 @@ export default class Scene {
     this.mesh = mesh;
   }
 
-  set running(running: boolean) {
-    if (running && !this._running) {
+  setRunning(running: boolean) {
+    if (running && !this.running) {
       // Start the render loop
       requestAnimationFrame(this.render.bind(this));
     }
-    this._running = running;
+    this.running = running;
   }
 
   render() {
@@ -86,6 +86,6 @@ export default class Scene {
     }
 
     // Continue render loop if we're still running
-    if (this._running) requestAnimationFrame(this.render.bind(this));
+    if (this.running) requestAnimationFrame(this.render.bind(this));
   }
 }
