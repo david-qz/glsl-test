@@ -55,6 +55,12 @@ export default class Scene {
 
     const modelViewMatrix = mat4.create();
     mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -6.0]);
+    mat4.rotateY(modelViewMatrix, modelViewMatrix, performance.now() / 600);
+    mat4.rotateX(modelViewMatrix, modelViewMatrix, performance.now() / 1200);
+
+    const normalMatrix = mat4.create();
+    mat4.invert(normalMatrix, modelViewMatrix);
+    mat4.transpose(normalMatrix, normalMatrix);
 
     const buffer = gl.createBuffer();
     if (buffer === null) throw new Error('Failed to create gl buffer.');
@@ -63,8 +69,13 @@ export default class Scene {
     // FIXME: Make it so the program is verified ahead of time so we don't need to null check this stuff!
     const positionAttributeInfo = this.programInfo.attributes.get('aVertexPosition');
     if (!positionAttributeInfo) throw new Error('The shader does not have a aVertexPosition attribute!');
-    gl.vertexAttribPointer(positionAttributeInfo.location, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(positionAttributeInfo.location);
+    gl.vertexAttribPointer(positionAttributeInfo.location, 3, gl.FLOAT, false, 24, 0);
+
+    const normalAttributeInfo = this.programInfo.attributes.get('aVertexNormal');
+    if (!normalAttributeInfo) throw new Error('The shader does not have a aVertexNormal attribute!');
+    gl.enableVertexAttribArray(normalAttributeInfo.location);
+    gl.vertexAttribPointer(normalAttributeInfo.location, 3, gl.FLOAT, true, 24, 12);
 
     // Set the shader uniforms
     // FIXME: Bad! See above.
@@ -72,12 +83,15 @@ export default class Scene {
     if (!projectionMatrixUniformInfo) throw new Error('The shader does not have a uProjectionMatrix uniform!');
     const modelViewMatrixUniformInfo = this.programInfo.uniforms.get('uModelViewMatrix');
     if (!modelViewMatrixUniformInfo) throw new Error('The shader does not have a uModelViewMatrix uniform!');
+    const normalMatrixUniformInfo = this.programInfo.uniforms.get('uNormalMatrix');
+    if (!normalMatrixUniformInfo) throw new Error('The shader does not have a uNormalMatrix uniform!');
 
     // Tell WebGL to use our program when drawing
     gl.useProgram(this.program);
 
     gl.uniformMatrix4fv(projectionMatrixUniformInfo.location, false, projectionMatrix);
     gl.uniformMatrix4fv(modelViewMatrixUniformInfo.location, false, modelViewMatrix);
+    gl.uniformMatrix4fv(normalMatrixUniformInfo.location, false, normalMatrix);
 
     // Render the mesh
     if (this.mesh) {
