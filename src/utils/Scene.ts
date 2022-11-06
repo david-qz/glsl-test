@@ -3,10 +3,11 @@ import { initShaderProgram, ProgramInfo } from './shaders';
 import { mat4 } from 'gl-matrix';
 
 export default class Scene {
-  gl: WebGL2RenderingContext;
-  meshes: Array<Mesh> = [];
-  program: WebGLProgram;
-  programInfo: ProgramInfo;
+  private gl: WebGL2RenderingContext;
+  private mesh: Mesh | undefined;
+  private program: WebGLProgram;
+  private programInfo: ProgramInfo;
+  private _running = false;
 
   constructor(gl: WebGL2RenderingContext, shaderSources: [string, string]) {
     this.gl = gl;
@@ -16,30 +17,36 @@ export default class Scene {
     this.programInfo = programInfo;
   }
 
-  addMesh(mesh: Mesh) {
-    this.meshes.push(mesh);
+  setMesh(mesh: Mesh) {
+    this.mesh = mesh;
+  }
+
+  set running(running: boolean) {
+    if (running && !this._running) {
+      // Start the render loop
+      requestAnimationFrame(this.render.bind(this));
+    }
+    this._running = running;
   }
 
   render() {
     const gl = this.gl;
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
-    gl.clearDepth(1.0);                 // Clear everything
-    gl.enable(gl.DEPTH_TEST);           // Enable depth testing
-    gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+    const canvas = gl.canvas;
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
     gl.enable(gl.CULL_FACE);
 
-    // Clear the canvas before we start drawing on it.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // Create a perspective matrix, a special matrix that is
-    // used to simulate the distortion of perspective in a camera.
-    // Our field of view is 45 degrees, with a width/height
-    // ratio that matches the display size of the canvas
-    // and we only want to see objects between 0.1 units
-    // and 100 units away from the camera.
-    const fieldOfView = 45 * Math.PI / 180;   // in radians
-    const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+    const fieldOfView = 45 * Math.PI / 180;
+    const aspect = gl.canvas.width / gl.canvas.height;
     const zNear = 0.1;
     const zFar = 100.0;
 
@@ -47,7 +54,7 @@ export default class Scene {
     mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
     const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -6.0]);
 
     const buffer = gl.createBuffer();
     if (buffer === null) throw new Error('Failed to create gl buffer.');
@@ -72,9 +79,13 @@ export default class Scene {
     gl.uniformMatrix4fv(projectionMatrixUniformInfo.location, false, projectionMatrix);
     gl.uniformMatrix4fv(modelViewMatrixUniformInfo.location, false, modelViewMatrix);
 
-    for (const mesh of this.meshes) {
-      gl.bufferData(gl.ARRAY_BUFFER, mesh.vertexData, gl.STATIC_DRAW, 0);
-      gl.drawArrays(gl.TRIANGLES, 0, mesh.vertexCount);
+    // Render the mesh
+    if (this.mesh) {
+      gl.bufferData(gl.ARRAY_BUFFER, this.mesh.vertexData, gl.STATIC_DRAW, 0);
+      gl.drawArrays(gl.TRIANGLES, 0, this.mesh.vertexCount);
     }
+
+    // Continue render loop if we're still running
+    if (this._running) requestAnimationFrame(this.render.bind(this));
   }
 }

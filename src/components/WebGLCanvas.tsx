@@ -8,9 +8,6 @@ export default function WebGLCanvas() {
   useEffect(() => {
     (async () => {
       if (canvasRef.current === null) throw new Error('Canvas ref is unexpectedly null!');
-      const canvas = canvasRef.current;
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
 
       const gl = canvasRef.current.getContext('webgl2');
       if (gl === null) throw new Error('Failed to create a webgl2 context.');
@@ -29,9 +26,9 @@ export default function WebGLCanvas() {
         1.0, 1.0, 0.0,
       ]);
       const mesh = new Mesh(vertexData, 6);
-      scene.addMesh(mesh);
+      scene.setMesh(mesh);
 
-      scene.render();
+      scene.running = true;
     })();
   }, []);
 
