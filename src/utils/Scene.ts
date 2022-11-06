@@ -68,30 +68,33 @@ export default class Scene {
 
     // FIXME: Make it so the program is verified ahead of time so we don't need to null check this stuff!
     const positionAttributeInfo = this.programInfo.attributes.get('aVertexPosition');
-    if (!positionAttributeInfo) throw new Error('The shader does not have a aVertexPosition attribute!');
-    gl.enableVertexAttribArray(positionAttributeInfo.location);
-    gl.vertexAttribPointer(positionAttributeInfo.location, 3, gl.FLOAT, false, 24, 0);
+    if (positionAttributeInfo) {
+      gl.enableVertexAttribArray(positionAttributeInfo.location);
+      gl.vertexAttribPointer(positionAttributeInfo.location, 3, gl.FLOAT, false, 24, 0);
+    }
 
     const normalAttributeInfo = this.programInfo.attributes.get('aVertexNormal');
-    if (!normalAttributeInfo) throw new Error('The shader does not have a aVertexNormal attribute!');
-    gl.enableVertexAttribArray(normalAttributeInfo.location);
-    gl.vertexAttribPointer(normalAttributeInfo.location, 3, gl.FLOAT, true, 24, 12);
-
-    // Set the shader uniforms
-    // FIXME: Bad! See above.
-    const projectionMatrixUniformInfo = this.programInfo.uniforms.get('uProjectionMatrix');
-    if (!projectionMatrixUniformInfo) throw new Error('The shader does not have a uProjectionMatrix uniform!');
-    const modelViewMatrixUniformInfo = this.programInfo.uniforms.get('uModelViewMatrix');
-    if (!modelViewMatrixUniformInfo) throw new Error('The shader does not have a uModelViewMatrix uniform!');
-    const normalMatrixUniformInfo = this.programInfo.uniforms.get('uNormalMatrix');
-    if (!normalMatrixUniformInfo) throw new Error('The shader does not have a uNormalMatrix uniform!');
+    if (normalAttributeInfo) {
+      gl.enableVertexAttribArray(normalAttributeInfo.location);
+      gl.vertexAttribPointer(normalAttributeInfo.location, 3, gl.FLOAT, true, 24, 12);
+    }
 
     // Tell WebGL to use our program when drawing
     gl.useProgram(this.program);
 
-    gl.uniformMatrix4fv(projectionMatrixUniformInfo.location, false, projectionMatrix);
-    gl.uniformMatrix4fv(modelViewMatrixUniformInfo.location, false, modelViewMatrix);
-    gl.uniformMatrix4fv(normalMatrixUniformInfo.location, false, normalMatrix);
+    // Set the shader uniforms
+    const projectionMatrixUniformInfo = this.programInfo.uniforms.get('uProjectionMatrix');
+    if (projectionMatrixUniformInfo) {
+      gl.uniformMatrix4fv(projectionMatrixUniformInfo.location, false, projectionMatrix);
+    }
+    const modelViewMatrixUniformInfo = this.programInfo.uniforms.get('uModelViewMatrix');
+    if (modelViewMatrixUniformInfo) {
+      gl.uniformMatrix4fv(modelViewMatrixUniformInfo.location, false, modelViewMatrix);
+    }
+    const normalMatrixUniformInfo = this.programInfo.uniforms.get('uNormalMatrix');
+    if (normalMatrixUniformInfo) {
+      gl.uniformMatrix4fv(normalMatrixUniformInfo.location, false, normalMatrix);
+    }
 
     // Render the mesh
     if (this.mesh) {
