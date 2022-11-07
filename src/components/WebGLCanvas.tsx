@@ -12,8 +12,10 @@ export default function WebGLCanvas() {
       const gl = canvasRef.current.getContext('webgl2');
       if (gl === null) throw new Error('Failed to create a webgl2 context.');
 
-      const vertexShaderSource: string = await fetch(`${process.env.PUBLIC_URL}/shaders/vertex.vs`).then(response => response.text());
-      const fragmentShaderSource: string = await fetch(`${process.env.PUBLIC_URL}/shaders/fragment.fs`).then(response => response.text());
+      const [vertexShaderSource, fragmentShaderSource] = await Promise.all([
+        fetch(`${process.env.PUBLIC_URL}/shaders/vertex.vs`).then(response => response.text()),
+        fetch(`${process.env.PUBLIC_URL}/shaders/fragment.fs`).then(response => response.text())
+      ]);
 
       const scene = new Scene(gl, [vertexShaderSource, fragmentShaderSource]);
 
