@@ -22,7 +22,9 @@ export function initShaderProgram(
   gl.linkProgram(shaderProgram);
 
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    throw new Error(`Unable to initialize the shader program: ${gl.getProgramInfoLog(shaderProgram)}`);
+    const errorMessage = gl.getShaderInfoLog(shaderProgram);
+    gl.deleteProgram(shaderProgram);
+    throw new Error(`Unable to initialize the shader program: ${errorMessage}`);
   }
 
   // Now that we've successfully linked the program, free the shader objects
