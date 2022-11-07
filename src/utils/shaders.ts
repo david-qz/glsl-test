@@ -25,6 +25,12 @@ export function initShaderProgram(
     throw new Error(`Unable to initialize the shader program: ${gl.getProgramInfoLog(shaderProgram)}`);
   }
 
+  // Now that we've successfully linked the program, free the shader objects
+  gl.detachShader(shaderProgram, vertexShader);
+  gl.detachShader(shaderProgram, fragmentShader);
+  gl.deleteShader(vertexShader);
+  gl.deleteShader(fragmentShader);
+
   const attributes = new Map<string, AttributeInfo>();
   const numberOfAttributes: number = gl.getProgramParameter(shaderProgram, gl.ACTIVE_ATTRIBUTES);
   for (let i = 0; i < numberOfAttributes; i++) {
